@@ -1,13 +1,13 @@
 # mssqlTasks
 
-Genkit-integrated task manager for database schema issues and LLM review task generation.
+Genkit v1.39-powered task manager for database schema issues and LLM review task generation.
 
 ## Features
 
-- **LLM Review Parsing** — Convert code review output into structured tasks
-- **Genkit Flows** — AI-powered task extraction from natural language
-- **Priority Management** — Auto-assign priority based on issue type (BUG, WARNING, TODO)
-- **Task Persistence** — Save tasks to `tasks.json` for tracking
+- **Regex-based task extraction** — Fast, no LLM needed
+- **AI-powered task extraction** — Smarter extraction using Genkit `generate()`
+- **Task management tools** — Create, list, update tasks
+- **Genkit tools** — Register tools for LLM tool-calling
 
 ## Installation
 
@@ -18,17 +18,49 @@ npm install mssql-tasks
 ## Usage
 
 ```typescript
-import { createTasksFromReview } from 'mssql-tasks';
+import { createTasksFromReview, getTasks, updateTask } from 'mssql-tasks';
 
+// Regex-based (fast, no LLM)
 const tasks = await createTasksFromReview(reviewText, workspaceDir);
+
+// AI-powered (smarter extraction)
+const tasks = await createTasksFromReview(reviewText, workspaceDir, true);
+
+// List tasks
+const todoTasks = await getTasks(workspaceDir, { status: 'todo' });
+
+// Update task
+await updateTask(workspaceDir, 'TASK-1234', { status: 'done' });
 ```
 
-### Genkit Flow
+### Genkit Flows
 
 ```typescript
-import { parseReviewToTasksFlow, runFlow } from 'mssql-tasks';
+import { runFlow } from 'genkit';
+import { parseReviewToTasksFlow, aiParseReviewToTasksFlow } from 'mssql-tasks';
 
+// Regex-based
 const tasks = await runFlow(parseReviewToTasksFlow, reviewText);
+
+// AI-powered
+const tasks = await runFlow(aiParseReviewToTasksFlow, reviewText);
+```
+
+### Genkit Tools
+
+```typescript
+import { ai, createTaskTool, listTasksTool } from 'mssql-tasks';
+
+// Create a task
+const task = await ai.run(createTaskTool, {
+  type: 'BUG',
+  description: 'Null pointer in UserService',
+});
+
+// List tasks
+const tasks = await ai.run(listTasksTool, {
+  workspaceDir: '/path/to/workspace',
+});
 ```
 
 ## Task Format
@@ -58,6 +90,21 @@ npm test         # Run smoke tests
 |----------|-----|
 | `mssqlCli` | Calls `createTasksFromReview()` after LLM code review |
 | `mssqlAgent` | Uses task format for issue tracking |
+
+## Genkit Features
+
+| Feature | Status |
+|---------|--------|
+| `genkit()` | ✅ Used |
+| `defineFlow()` | ✅ Used |
+| `defineTool()` | ✅ Used |
+| `runFlow()` | ✅ Used |
+| `generate()` | ✅ Used |
+| `definePrompt()` | Available |
+| Session/memory | Available |
+| Streaming | Available |
+
+See [docs/genkit.md](../docs/genkit.md) for full Genkit integration guide.
 
 ## License
 

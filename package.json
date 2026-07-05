@@ -22,9 +22,7 @@
     "test": "node test/smoke.test.js"
   },
   "dependencies": {
-    "@genkit-ai/ai": "^0.5.8",
-    "@genkit-ai/core": "^0.5.8",
-    "@genkit-ai/flow": "^0.5.8"
+    "genkit": "^1.39.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
