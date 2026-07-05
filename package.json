@@ -1,0 +1,19 @@
+{
+  "name": "mssql-tasks",
+  "version": "1.0.0",
+  "description": "Genkit-integrated task manager for database schema issues and LLM review task generation",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "node test/smoke.test.js"
+  },
+  "dependencies": {
+    "@genkit-ai/ai": "^0.5.8",
+    "@genkit-ai/core": "^0.5.8",
+    "@genkit-ai/flow": "^0.5.8"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "@types/node": "^16.11.7"
+  }
+}
