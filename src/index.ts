@@ -1,4 +1,4 @@
-import { genkit, defineFlow, defineTool, runFlow, z } from 'genkit';
+import { genkit, z } from 'genkit';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -22,7 +22,7 @@ export type Task = z.infer<typeof TaskSchema>;
 
 // ─── Tools ───────────────────────────────────────────────────────────────────
 
-export const createTaskTool = defineTool(
+export const createTaskTool = ai.defineTool(
   {
     name: 'createTask',
     description: 'Create a new task from a code review issue. Extract the issue type, description, and assign priority.',
@@ -43,14 +43,14 @@ export const createTaskTool = defineTool(
       title: `[LLM Review] ${input.type}: ${input.description.slice(0, 50)}${input.description.length > 50 ? '...' : ''}`,
       description: input.description,
       priority,
-      status: 'todo',
+      status: 'todo' as const,
       file: input.file,
       createdAt: new Date().toISOString(),
     };
   }
 );
 
-export const listTasksTool = defineTool(
+export const listTasksTool = ai.defineTool(
   {
     name: 'listTasks',
     description: 'List all tasks from the tasks.json file in the workspace.',
@@ -73,7 +73,7 @@ export const listTasksTool = defineTool(
   }
 );
 
-export const updateTaskTool = defineTool(
+export const updateTaskTool = ai.defineTool(
   {
     name: 'updateTask',
     description: 'Update a task status or fields in tasks.json.',
@@ -101,16 +101,39 @@ export const updateTaskTool = defineTool(
   }
 );
 
+export const deleteTaskTool = ai.defineTool(
+  {
+    name: 'deleteTask',
+    description: 'Delete a task from tasks.json by ID.',
+    inputSchema: z.object({
+      workspaceDir: z.string(),
+      taskId: z.string(),
+    }),
+    outputSchema: z.boolean(),
+  },
+  async (input) => {
+    const tasksFilePath = path.join(input.workspaceDir, 'tasks.json');
+    if (!fs.existsSync(tasksFilePath)) return false;
+
+    const tasks: Task[] = JSON.parse(fs.readFileSync(tasksFilePath, 'utf8'));
+    const index = tasks.findIndex(t => t.id === input.taskId);
+    if (index === -1) return false;
+
+    tasks.splice(index, 1);
+    fs.writeFileSync(tasksFilePath, JSON.stringify(tasks, null, 2));
+    return true;
+  }
+);
+
 // ─── Flows ───────────────────────────────────────────────────────────────────
 
-// Regex-based flow (fast, no LLM needed)
-export const parseReviewToTasksFlow = defineFlow(
+export const parseReviewToTasksFlow = ai.defineFlow(
   {
     name: 'parseReviewToTasks',
     inputSchema: z.string(),
     outputSchema: z.array(TaskSchema),
   },
-  async (reviewText) => {
+  async (reviewText: string) => {
     const tasks: Task[] = [];
     const lines = reviewText.split('\n');
     let taskIdCounter = 1;
@@ -164,14 +187,13 @@ export const parseReviewToTasksFlow = defineFlow(
   }
 );
 
-// LLM-powered flow (smarter extraction using Genkit generate)
-export const aiParseReviewToTasksFlow = defineFlow(
+export const aiParseReviewToTasksFlow = ai.defineFlow(
   {
     name: 'aiParseReviewToTasks',
     inputSchema: z.string(),
     outputSchema: z.array(TaskSchema),
   },
-  async (reviewText) => {
+  async (reviewText: string) => {
     const { output } = await ai.generate({
       model: 'openai/gpt-4o-mini',
       prompt: `You are a code review analyst. Parse the following code review output into structured tasks.
@@ -196,9 +218,12 @@ ${reviewText}`,
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
 export async function createTasksFromReview(reviewText: string, workspaceDir: string, useAI = false): Promise<Task[]> {
-  const tasks = useAI
-    ? await runFlow(aiParseReviewToTasksFlow, reviewText)
-    : await runFlow(parseReviewToTasksFlow, reviewText);
+  let tasks: Task[];
+  if (useAI) {
+    tasks = await aiParseReviewToTasksFlow(reviewText);
+  } else {
+    tasks = await parseReviewToTasksFlow(reviewText);
+  }
 
   if (tasks.length > 0) {
     const tasksFilePath = path.join(workspaceDir, 'tasks.json');
@@ -216,9 +241,40 @@ export async function createTasksFromReview(reviewText: string, workspaceDir: st
 }
 
 export async function getTasks(workspaceDir: string, filters?: { status?: string; priority?: string }): Promise<Task[]> {
-  return runFlow(listTasksTool, { workspaceDir, ...filters } as any);
+  const tasksFilePath = path.join(workspaceDir, 'tasks.json');
+  if (!fs.existsSync(tasksFilePath)) return [];
+
+  const tasks: Task[] = JSON.parse(fs.readFileSync(tasksFilePath, 'utf8'));
+  let filtered = tasks;
+  if (filters?.status) filtered = filtered.filter(t => t.status === filters.status);
+  if (filters?.priority) filtered = filtered.filter(t => t.priority === filters.priority);
+  return filtered;
 }
 
 export async function updateTask(workspaceDir: string, taskId: string, updates: { status?: string; priority?: string }): Promise<Task | null> {
-  return runFlow(updateTaskTool as any, { workspaceDir, taskId, ...updates } as any);
+  const tasksFilePath = path.join(workspaceDir, 'tasks.json');
+  if (!fs.existsSync(tasksFilePath)) return null;
+
+  const tasks: Task[] = JSON.parse(fs.readFileSync(tasksFilePath, 'utf8'));
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return null;
+
+  if (updates.status) task.status = updates.status as Task['status'];
+  if (updates.priority) task.priority = updates.priority as Task['priority'];
+
+  fs.writeFileSync(tasksFilePath, JSON.stringify(tasks, null, 2));
+  return task;
+}
+
+export async function deleteTask(workspaceDir: string, taskId: string): Promise<boolean> {
+  const tasksFilePath = path.join(workspaceDir, 'tasks.json');
+  if (!fs.existsSync(tasksFilePath)) return false;
+
+  const tasks: Task[] = JSON.parse(fs.readFileSync(tasksFilePath, 'utf8'));
+  const index = tasks.findIndex(t => t.id === taskId);
+  if (index === -1) return false;
+
+  tasks.splice(index, 1);
+  fs.writeFileSync(tasksFilePath, JSON.stringify(tasks, null, 2));
+  return true;
 }

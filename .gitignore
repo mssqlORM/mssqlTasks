@@ -1,5 +1,8 @@
 node_modules/
 dist/
+src/*.js
+src/*.d.ts
+src/*.js.map
 *.tsbuildinfo
 npm-debug.log*
 .DS_Store
