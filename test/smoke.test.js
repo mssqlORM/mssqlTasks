@@ -14,4 +14,4 @@ assert.ok(pkg.dependencies?.genkit, 'Expected genkit dependency');
 assert.ok(pkg.main, 'Expected main field');
 assert.ok(pkg.types, 'Expected types field');
 
-console.log('mssqlTasks smoke test passed');
+console.log('an5Tasks smoke test passed');

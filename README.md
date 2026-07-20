@@ -1,4 +1,4 @@
-# mssqlTasks
+# an5Tasks
 
 Genkit v1.39-powered task manager for database schema issues and LLM review task generation.
 
@@ -12,13 +12,13 @@ Genkit v1.39-powered task manager for database schema issues and LLM review task
 ## Installation
 
 ```bash
-npm install mssql-tasks
+npm install an5-tasks
 ```
 
 ## Usage
 
 ```typescript
-import { createTasksFromReview, getTasks, updateTask } from 'mssql-tasks';
+import { createTasksFromReview, getTasks, updateTask } from 'an5-tasks';
 
 // Regex-based (fast, no LLM)
 const tasks = await createTasksFromReview(reviewText, workspaceDir);
@@ -37,7 +37,7 @@ await updateTask(workspaceDir, 'TASK-1234', { status: 'done' });
 
 ```typescript
 import { runFlow } from 'genkit';
-import { parseReviewToTasksFlow, aiParseReviewToTasksFlow } from 'mssql-tasks';
+import { parseReviewToTasksFlow, aiParseReviewToTasksFlow } from 'an5-tasks';
 
 // Regex-based
 const tasks = await runFlow(parseReviewToTasksFlow, reviewText);
@@ -49,7 +49,7 @@ const tasks = await runFlow(aiParseReviewToTasksFlow, reviewText);
 ### Genkit Tools
 
 ```typescript
-import { ai, createTaskTool, listTasksTool } from 'mssql-tasks';
+import { ai, createTaskTool, listTasksTool } from 'an5-tasks';
 
 // Create a task
 const task = await ai.run(createTaskTool, {
@@ -88,8 +88,8 @@ npm test         # Run smoke tests
 
 | Consumer | How |
 |----------|-----|
-| `mssqlCli` | Calls `createTasksFromReview()` after LLM code review |
-| `mssqlAgent` | Uses task format for issue tracking |
+| `an5Cli` | Calls `createTasksFromReview()` after LLM code review |
+| `an5Agent` | Uses task format for issue tracking |
 
 ## Genkit Features
 

@@ -1,5 +1,5 @@
 {
-  "name": "mssql-tasks",
+  "name": "an5-tasks",
   "version": "1.0.0",
   "description": "Genkit-integrated task manager for database schema issues and LLM review task generation",
   "license": "MIT",
@@ -10,9 +10,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mssqlORM/mssqlTasks.git"
+    "url": "https://github.com/an5ORM/an5Tasks.git"
   },
-  "keywords": ["mssql", "tasks", "genkit", "llm", "code-review"],
+  "keywords": ["an5", "tasks", "genkit", "llm", "code-review"],
   "files": [
     "dist/**/*.{js,d.ts}",
     "README.md"
